@@ -12,15 +12,20 @@ namespace NPoco.Tests.Common
         private Dictionary<string, PocoColumn> _columns;
         private Dictionary<string, PocoColumn> _queryColumns;
 
-        public MockPocoData(TableInfo tableInfo, Dictionary<string, PocoColumn> columns): this(tableInfo, columns, null) {
+        public MockPocoData(TableInfo tableInfo): this(tableInfo, null) {
            
         }
 
-        public MockPocoData(TableInfo tableInfo, Dictionary<string, PocoColumn> columns, Dictionary<string, PocoColumn> queryColumns)
+        public MockPocoData(TableInfo tableInfo, Dictionary<string, PocoColumn> queryColumns)
         {
 
             _tableInfo = tableInfo;
-            _columns = columns;
+            _columns = new Dictionary<string,PocoColumn>();
+
+            foreach (var column in _columns)
+            {
+                column.Value.TableInfo = tableInfo;
+            }
 
             if (queryColumns == null)
             {

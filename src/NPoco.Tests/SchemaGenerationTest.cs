@@ -23,20 +23,20 @@ namespace NPoco.Tests
             var col = new PocoColumn();
 
             col.ColumnName = "string1";
+            var pocoData = new MockPocoData(tableInfo);
 
-            AddColumn(columns, "string", typeof(string));
-            AddColumn(columns, "byte", typeof(byte[]));
-            AddColumn(columns, "bool", typeof(bool));
-            AddColumn(columns, "decimal", typeof(decimal));
-            AddColumn(columns, "datetime", typeof(DateTime));
-            AddColumn(columns, "double", typeof(double));
-            AddColumn(columns, "guid", typeof(Guid));
-            AddColumn(columns, "int", typeof(int));
-            AddColumn(columns, "short", typeof(short));
-            AddColumn(columns, "long", typeof(long));
-            AddColumn(columns, "single", typeof(Single));
+            AddColumn(pocoData, "string", typeof(string));
+            AddColumn(pocoData, "byte", typeof(byte[]));
+            AddColumn(pocoData, "bool", typeof(bool));
+            AddColumn(pocoData, "decimal", typeof(decimal));
+            AddColumn(pocoData, "datetime", typeof(DateTime));
+            AddColumn(pocoData, "double", typeof(double));
+            AddColumn(pocoData, "guid", typeof(Guid));
+            AddColumn(pocoData, "int", typeof(int));
+            AddColumn(pocoData, "short", typeof(short));
+            AddColumn(pocoData, "long", typeof(long));
+            AddColumn(pocoData, "single", typeof(Single));
 
-            var pocoData = new MockPocoData(tableInfo, columns);
 
             Database.CreateSchema(pocoData);
 
@@ -44,12 +44,43 @@ namespace NPoco.Tests
 
         }
 
-        void AddColumn(IDictionary<string, PocoColumn> columns, string columnName, Type columnType)
+        [Test]
+        public void AddIdentityColumnTest()
         {
-            AddColumn(columns, columnName, columnType, false, 1, 1);
+
+            var tableInfo = new TableInfo();
+
+            tableInfo.TableName = "identited";
+            
+            var pocoData = new MockPocoData(tableInfo);
+
+            var col = new PocoColumn();
+
+            col.ColumnName = "string1";
+
+            AddColumn(pocoData, "data", typeof(string));
+
+            Database.CreateSchema(pocoData);
+
+            EnsureSchemaMatch(Database, pocoData);
+
+
+            AddColumn(pocoData, "id", typeof(int), true, 1, 5);
+
+            Assert.Throws<NPoco.UnsafeSchemaModificationException>(() => Database.CreateSchema(pocoData));
+
+            pocoData.Columns.Remove("id");
+
+            EnsureSchemaMatch(Database, pocoData);
+
         }
 
-        void AddColumn(IDictionary<string, PocoColumn> columns, string columnName, Type columnType, bool identityColumn, int identitySeed, int identityIncrement)
+        void AddColumn(MockPocoData pocoData, string columnName, Type columnType)
+        {
+            AddColumn(pocoData, columnName, columnType, false, 1, 1);
+        }
+
+        void AddColumn(MockPocoData pocoData, string columnName, Type columnType, bool identityColumn, int identitySeed, int identityIncrement)
         {
             var col = new PocoColumn();
             col.ColumnName = columnName;
@@ -58,7 +89,9 @@ namespace NPoco.Tests
             col.IdentitySeed = identitySeed;
             col.IdentityIncrement = identityIncrement;
 
-            columns.Add(columnName, col);
+            col.TableInfo = pocoData.TableInfo;
+
+            pocoData.Columns.Add(columnName, col);
         }
 
         void EnsureSchemaMatch(IDatabase db, IPocoData pocoData)
@@ -128,7 +161,13 @@ namespace NPoco.Tests
                     else
                     {
                         throw new NotSupportedException(pocoColumn.Value.ColumnType.Name);
-                    } 
+                    }
+                    
+                    NPoco.DatabaseTypes.SqlServerDatabaseType sqlType = (NPoco.DatabaseTypes.SqlServerDatabaseType) dbType;
+
+                    bool isIdentited = sqlType.IsIdentityColumn(db, pocoColumn.Value);
+                    
+                    Assert.AreEqual(pocoColumn.Value.IdentityColumn, isIdentited);
                 }
             }
             else

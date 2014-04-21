@@ -3,6 +3,7 @@
 namespace NPoco.Tests.Common
 {
     [TableName("CompositeObjects")]
+    [TableAutoCreate(true)]
     [PrimaryKey("Key1ID, Key2ID, Key3ID")]
     [ExplicitColumns]
     public class CompositeObjectDecorated

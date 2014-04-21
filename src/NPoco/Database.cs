@@ -241,16 +241,10 @@ namespace NPoco
             set { _versionException = value; }
         }
 
-        public Boolean AutoCreateSchema
-        {
-            get { return _autoCreateSchema; }
-            set { _autoCreateSchema = value; }
-        }
-
         private HashSet<PocoData> _createdSchemasPocoData = new HashSet<PocoData>();
         void EnsureSchemaCreated(PocoData pocoData)
         {
-            if (AutoCreateSchema && pocoData.TableInfo.AutoCreate && !_createdSchemasPocoData.Contains(pocoData))
+            if (pocoData.TableInfo.AutoCreate && !_createdSchemasPocoData.Contains(pocoData))
             {
                 CreateSchema(pocoData);
                 _createdSchemasPocoData.Add(pocoData);
@@ -1776,7 +1770,6 @@ namespace NPoco
         private object[] _lastArgs;
         private string _paramPrefix = "@";
         private VersionExceptionHandling _versionException = VersionExceptionHandling.Ignore;
-        private Boolean _autoCreateSchema = false;
 
         internal int ExecuteNonQueryHelper(IDbCommand cmd)
         {

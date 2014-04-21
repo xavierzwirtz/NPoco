@@ -4,6 +4,7 @@ using System.Collections.Generic;
 namespace NPoco.Tests.Common
 {
     [TableName("Users")]
+    [TableAutoCreate(true)]
     [PrimaryKey("UserId")]
     [ExplicitColumns]
     public class UserDecorated

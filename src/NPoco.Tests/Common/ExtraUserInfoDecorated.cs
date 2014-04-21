@@ -1,6 +1,7 @@
 ﻿namespace NPoco.Tests.Common
 {
     [TableName("ExtraUserInfos")]
+    [TableAutoCreate(true)]
     [PrimaryKey("ExtraUserInfoId")]
     [ExplicitColumns]
     public class ExtraUserInfoDecorated

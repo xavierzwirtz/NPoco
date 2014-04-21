@@ -33,7 +33,6 @@ namespace NPoco.Tests.Common
                 case 3: // SQL Server
                     TestDatabase = new SQLServerDatabase();
                     Database = new Database(TestDatabase.Connection, new SqlServer2008DatabaseType(), IsolationLevel.ReadUncommitted); // Need read uncommitted for the transaction tests
-                    Database.AutoCreateSchema = true;
                     break;
 
                 case 4: // SQL CE

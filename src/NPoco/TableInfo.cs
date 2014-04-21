@@ -31,7 +31,7 @@ namespace NPoco
 
             a = t.GetCustomAttributes(typeof(TableAutoCreateAttribute), true);
             // Get whether to autocreate schema
-            tableInfo.AutoCreate = a.Length == 0 ? true : (a[0] as TableAutoCreateAttribute).Value;
+            tableInfo.AutoCreate = a.Length == 0 ? false : (a[0] as TableAutoCreateAttribute).Value;
 
             return tableInfo;
         }

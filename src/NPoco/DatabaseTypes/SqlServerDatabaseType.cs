@@ -51,9 +51,9 @@ namespace NPoco.DatabaseTypes
 
         public override DbType? LookupDbType(Type type, string name)
         {
-            if (type == typeof (TimeSpan) || type == typeof(TimeSpan?))
+            if (type == typeof(TimeSpan) || type == typeof(TimeSpan?))
                 return null;
-            
+
             return base.LookupDbType(type, name);
         }
 
@@ -132,6 +132,23 @@ namespace NPoco.DatabaseTypes
             return builder.ToString();
         }
 
+        public bool IsIdentityColumn(IDatabase db, PocoColumn pocoColumn)
+        {
+            return db.Fetch<bool>("select COLUMNPROPERTY(object_id(@0), @1, 'IsIdentity')",
+                        pocoColumn.TableInfo.TableName, pocoColumn.ColumnName).First();
+
+        }
+
+        private string SQLExceptionHelper(string message)
+        {
+            var exc = "";
+
+            exc += " RAISERROR('" + message + "', 16, 1); ";
+            exc += " GOTO ENDMARKER; ";
+
+            return exc;
+        }
+
         public override void CreateSchema(Database db, IPocoData pocoData)
         {
 
@@ -177,7 +194,7 @@ namespace NPoco.DatabaseTypes
             commandBuilder.AppendFormat(" END ");
             commandBuilder.AppendFormat(" ELSE ");
             commandBuilder.AppendFormat(" BEGIN ");
-
+            //update existing table
 
             foreach (PocoColumn pocoColumn in pocoData.Columns.Values)
             {
@@ -200,8 +217,16 @@ namespace NPoco.DatabaseTypes
                 commandBuilder.AppendFormat(" AND  TABLE_NAME = '{0}' ", tableName);
                 commandBuilder.AppendFormat(" AND  COLUMN_NAME = '{0}')) ", pocoColumn.ColumnName);
                 commandBuilder.AppendFormat(" BEGIN ");
-                commandBuilder.AppendFormat("     ALTER TABLE {0} ", fullTableName);
-                commandBuilder.AppendFormat("     ADD {0} ", columnSchema);
+                if (pocoColumn.IdentityColumn)
+                {
+                    commandBuilder.Append(SQLExceptionHelper(string.Format("UnsafeSchemaMod, {0}", pocoColumn.ColumnName)));
+                }
+                else
+                {
+                    commandBuilder.AppendFormat("     ALTER TABLE {0} ", fullTableName);
+                    commandBuilder.AppendFormat("     ADD {0} ", columnSchema);
+                }
+
                 commandBuilder.AppendFormat(" END ");
                 commandBuilder.AppendFormat(" ELSE ");
                 commandBuilder.AppendFormat(" BEGIN ");
@@ -237,7 +262,8 @@ namespace NPoco.DatabaseTypes
             //    commandBuilder.AppendFormat("    END ");
             //}
 
-            commandBuilder.AppendFormat(" END ");
+            commandBuilder.AppendFormat(" END; ");
+            commandBuilder.AppendFormat(" ENDMARKER:; ");
 
             //TODO implement indexes
             //foreach (  oIndex_loopVariable in colIndexes) {
@@ -258,8 +284,29 @@ namespace NPoco.DatabaseTypes
             //}
 
             cmd.CommandText = commandBuilder.ToString();
+            try
+            {
+                db.ExecuteNonQueryHelper(cmd);
+            }
+            catch (System.Data.SqlClient.SqlException ex)
+            {
+                var message = ex.Message;
+                if (message.StartsWith("UnsafeSchemaMod"))
+                {
+                    string columnName = message.Split(',')[1].Trim();
 
-            db.ExecuteNonQueryHelper(cmd);
+                    var column = (from col in pocoData.Columns.Values
+                                 where col.ColumnName == columnName
+                                 select col).First();
+
+                    throw new UnsafeSchemaModificationException(column);
+                }
+                else
+                {
+                    throw;
+                }
+            }
+
 
         }
 
